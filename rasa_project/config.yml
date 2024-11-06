@@ -1,0 +1,40 @@
+language: ru
+
+pipeline:
+- name: WhitespaceTokenizer
+- name: RegexFeaturizer                     # Извлечение признаков с помощью регулярных выражений
+- name: LexicalSyntacticFeaturizer          # Лексико-синтаксический анализатор
+- name: CountVectorsFeaturizer              # Извлечение признаков по частоте слов
+  analyzer: "char_wb"                       # Символьные N-граммы
+  min_ngram: 1
+  max_ngram: 2                              # Уменьшены размеры N-грамм для ускорения
+
+# Подключение предобученной модели трансформера (BERT)
+- name: "LanguageModelFeaturizer"
+  model_name: "bert"                        # Модель BERT для русского языка
+  model_weights: "bert-base-cased"          # Весы модели BERT
+  cache_dir: null
+
+- name: DIETClassifier
+  epochs: 300
+  transformer_size: 64
+  number_of_transformer_layers: 2
+  use_masked_language_model: true
+  batch_strategy: "balanced"
+  hidden_layers_sizes:
+    text: [64]
+  confidence_threshold: 0.6
+
+- name: EntitySynonymMapper                 # Маппер синонимов сущностей
+- name: ResponseSelector                    # Минимальный выбор ответа
+  epochs: 200                                # Минимальное количество эпох обучения
+
+policies:
+- name: MemoizationPolicy
+  max_history: 3                            # Минимальная история
+- name: RulePolicy
+- name: TEDPolicy
+  max_history: 3                            # Минимальное количество шагов в истории
+  epochs: 200                                # Минимальное количество эпох обучения
+  constrain_similarities: true
+assistant_id: 20241105-200937-threadbare-band
